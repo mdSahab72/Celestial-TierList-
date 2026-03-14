@@ -1,0 +1,100 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: players
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required, 1-50 chars)
+    //   - region: string (required, 1-20 chars)
+    //   - points: number (required, >= 0)
+    //   - tiers: list of strings (optional, max 10 items, each 1-20 chars)
+    //   - role: string (required, 1-50 chars)
+    //
+    // Collection: categoryPlayers
+    // Document ID: auto-generated
+    // Fields:
+    //   - category: string (required, 1-50 chars)
+    //   - tier: number (required, >= 1)
+    //   - name: string (required, 1-50 chars)
+    //   - region: string (required, 1-20 chars)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      // Only the specific admin email is allowed to write
+      return isAuthenticated() && (request.auth.token.email == 'spookysponsersship@gmail.com' || request.auth.token.email == 'mdsahab727g@gmail.com');
+    }
+
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidTiersList(tiers) {
+      return tiers is list && tiers.size() <= 10;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidPlayer(data) {
+      return hasOnlyAllowedFields(['name', 'region', 'points', 'tiers', 'role']) &&
+             isValidString(data.name, 1, 50) &&
+             isValidString(data.region, 1, 20) &&
+             data.points is number && data.points >= 0 &&
+             isValidString(data.role, 1, 50) &&
+             (!('tiers' in data) || isValidTiersList(data.tiers));
+    }
+
+    function isValidCategoryPlayer(data) {
+      return hasOnlyAllowedFields(['category', 'tier', 'name', 'region', 'subtier']) &&
+             isValidString(data.category, 1, 50) &&
+             data.tier is number && data.tier >= 1 &&
+             isValidString(data.name, 1, 50) &&
+             isValidString(data.region, 1, 20) &&
+             (!('subtier' in data) || isValidString(data.subtier, 0, 50));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /players/{playerId} {
+      // Public read access for the leaderboard
+      allow read: if true;
+      
+      // Only admin can create, update, or delete players
+      allow create: if isAdmin() && isValidPlayer(request.resource.data);
+      allow update: if isAdmin() && isValidPlayer(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /categoryPlayers/{categoryPlayerId} {
+      // Public read access for the leaderboard
+      allow read: if true;
+      
+      // Only admin can create, update, or delete category players
+      allow create: if isAdmin() && isValidCategoryPlayer(request.resource.data);
+      allow update: if isAdmin() && isValidCategoryPlayer(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}

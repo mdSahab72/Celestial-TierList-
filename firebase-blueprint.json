@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "Player": {
+      "title": "Player",
+      "description": "An overall player ranking entry.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the player"
+        },
+        "region": {
+          "type": "string",
+          "description": "The region of the player"
+        },
+        "points": {
+          "type": "number",
+          "description": "Total points"
+        },
+        "tiers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of tiers"
+        },
+        "role": {
+          "type": "string",
+          "description": "Player's role"
+        }
+      },
+      "required": ["name", "region", "points", "role"]
+    },
+    "CategoryPlayer": {
+      "title": "CategoryPlayer",
+      "description": "A player ranking entry in a specific category.",
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "The category ID"
+        },
+        "tier": {
+          "type": "number",
+          "description": "The tier number"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the player"
+        },
+        "region": {
+          "type": "string",
+          "description": "The region of the player"
+        }
+      },
+      "required": ["category", "tier", "name", "region"]
+    }
+  },
+  "firestore": {
+    "/players/{playerId}": {
+      "schema": {
+        "$ref": "#/entities/Player"
+      },
+      "description": "Overall players collection"
+    },
+    "/categoryPlayers/{categoryPlayerId}": {
+      "schema": {
+        "$ref": "#/entities/CategoryPlayer"
+      },
+      "description": "Category players collection"
+    }
+  }
+}
